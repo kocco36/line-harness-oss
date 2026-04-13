@@ -121,29 +121,10 @@ liffRoutes.get('/auth/line', async (c) => {
   // It must NOT appear in LIFF URLs or QR codes that escape to external domains.
   const externalRef = ref.startsWith('xh:') ? '' : ref;
 
-  // Build LIFF URL with ref + ad params (for mobile → LINE app)
-  // Extract LIFF ID from URL and pass as query param so the app can init correctly
-  const liffIdMatch = liffUrl.match(/liff\.line\.me\/([0-9]+-[A-Za-z0-9]+)/);
-  const liffParams = new URLSearchParams();
-  if (liffIdMatch) liffParams.set('liffId', liffIdMatch[1]);
-  if (externalRef) liffParams.set('ref', externalRef);
-  if (formId) liffParams.set('form', formId);
   const gateParam = c.req.query('gate') || '';
-  if (gateParam) liffParams.set('gate', gateParam);
   const xhParam2 = c.req.query('xh') || '';
-  if (xhParam2) liffParams.set('xh', xhParam2);
-  if (igParam) liffParams.set('ig', igParam);
-  if (redirect) liffParams.set('redirect', redirect);
-  if (gclid) liffParams.set('gclid', gclid);
-  if (fbclid) liffParams.set('fbclid', fbclid);
-  if (twclid) liffParams.set('twclid', twclid);
-  if (ttclid) liffParams.set('ttclid', ttclid);
-  if (utmSource) liffParams.set('utm_source', utmSource);
-  const liffTarget = liffParams.toString()
-    ? `${liffUrl}?${liffParams.toString()}`
-    : liffUrl;
 
-  // Build OAuth URL (for desktop fallback)
+  // Build OAuth URL (for desktop fallback and LIFF-less environments)
   // Pack all tracking params into state so they survive the OAuth redirect.
   // The full ref (including xh: tokens) is stored in state — it is opaque to access.line.me
   // and only decoded by this worker's /auth/callback handler.
@@ -160,6 +141,31 @@ liffRoutes.get('/auth/line', async (c) => {
   loginUrl.searchParams.set('scope', 'profile openid email');
   loginUrl.searchParams.set('bot_prompt', 'aggressive');
   loginUrl.searchParams.set('state', encodedState);
+
+  // LIFF_URL 未設定の場合は LIFF をスキップして OAuth フローへフォールバック
+  if (!liffUrl) {
+    return c.redirect(loginUrl.toString());
+  }
+
+  // Build LIFF URL with ref + ad params (for mobile → LINE app)
+  // Extract LIFF ID from URL and pass as query param so the app can init correctly
+  const liffIdMatch = liffUrl.match(/liff\.line\.me\/([0-9]+-[A-Za-z0-9]+)/);
+  const liffParams = new URLSearchParams();
+  if (liffIdMatch) liffParams.set('liffId', liffIdMatch[1]);
+  if (externalRef) liffParams.set('ref', externalRef);
+  if (formId) liffParams.set('form', formId);
+  if (gateParam) liffParams.set('gate', gateParam);
+  if (xhParam2) liffParams.set('xh', xhParam2);
+  if (igParam) liffParams.set('ig', igParam);
+  if (redirect) liffParams.set('redirect', redirect);
+  if (gclid) liffParams.set('gclid', gclid);
+  if (fbclid) liffParams.set('fbclid', fbclid);
+  if (twclid) liffParams.set('twclid', twclid);
+  if (ttclid) liffParams.set('ttclid', ttclid);
+  if (utmSource) liffParams.set('utm_source', utmSource);
+  const liffTarget = liffParams.toString()
+    ? `${liffUrl}?${liffParams.toString()}`
+    : liffUrl;
 
   // Build LIFF URL with params (opens LINE app directly on mobile + QR on PC)
   // externalRef used — xh: tokens must not appear in QR codes or LIFF URLs
