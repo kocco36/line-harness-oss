@@ -14,6 +14,9 @@ interface LineAccountListItem {
   pictureUrl: string | null
   basicId: string | null
   isActive: boolean
+  loginChannelId: string | null
+  loginChannelSecret: string | null
+  liffId: string | null
   createdAt: string
   updatedAt: string
   stats: {
@@ -51,7 +54,7 @@ export default function AccountsPage() {
 
   // 編集モーダル
   const [editAccount, setEditAccount] = useState<LineAccountListItem | null>(null)
-  const [editForm, setEditForm] = useState({ name: '', channelAccessToken: '', channelSecret: '' })
+  const [editForm, setEditForm] = useState({ name: '', channelAccessToken: '', channelSecret: '', loginChannelId: '', loginChannelSecret: '', liffId: '' })
   const [editSubmitting, setEditSubmitting] = useState(false)
 
   const load = async () => {
@@ -96,7 +99,14 @@ export default function AccountsPage() {
 
   const openEdit = (account: LineAccountListItem) => {
     setEditAccount(account)
-    setEditForm({ name: account.name, channelAccessToken: '', channelSecret: '' })
+    setEditForm({
+      name: account.name,
+      channelAccessToken: '',
+      channelSecret: '',
+      loginChannelId: account.loginChannelId || '',
+      loginChannelSecret: '',
+      liffId: account.liffId || '',
+    })
   }
 
   const handleEdit = async (e: React.FormEvent) => {
@@ -104,10 +114,27 @@ export default function AccountsPage() {
     if (!editAccount) return
     setEditSubmitting(true)
     try {
-      const data: { name?: string; channelAccessToken?: string; channelSecret?: string } = {}
+      const data: {
+        name?: string
+        channelAccessToken?: string
+        channelSecret?: string
+        loginChannelId?: string | null
+        loginChannelSecret?: string | null
+        liffId?: string | null
+      } = {}
       if (editForm.name.trim()) data.name = editForm.name.trim()
       if (editForm.channelAccessToken.trim()) data.channelAccessToken = editForm.channelAccessToken.trim()
       if (editForm.channelSecret.trim()) data.channelSecret = editForm.channelSecret.trim()
+      // 空欄 = null（クリア）、値あり = 更新、変更なし = undefined（送信しない）
+      const newLoginChannelId = editForm.loginChannelId.trim()
+      if (newLoginChannelId !== (editAccount.loginChannelId || '')) {
+        data.loginChannelId = newLoginChannelId || null
+      }
+      if (editForm.loginChannelSecret.trim()) data.loginChannelSecret = editForm.loginChannelSecret.trim()
+      const newLiffId = editForm.liffId.trim()
+      if (newLiffId !== (editAccount.liffId || '')) {
+        data.liffId = newLiffId || null
+      }
       await api.lineAccounts.update(editAccount.id, data)
       setEditAccount(null)
       load()
@@ -318,6 +345,47 @@ export default function AccountsPage() {
                   onChange={(e) => setEditForm({ ...editForm, channelSecret: e.target.value })}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="空欄のまま = 変更しない"
+                />
+              </div>
+              <hr className="border-gray-100" />
+              <p className="text-xs text-gray-400 -mt-2">LINE Login 設定（友だち追加URLに使用）</p>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  LINE Login チャンネル ID
+                  <span className="ml-1 text-gray-400 font-normal">（空欄でクリア）</span>
+                </label>
+                <input
+                  type="text"
+                  value={editForm.loginChannelId}
+                  onChange={(e) => setEditForm({ ...editForm, loginChannelId: e.target.value })}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="例: 2009679327"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  LINE Login チャンネルシークレット
+                  <span className="ml-1 text-gray-400 font-normal">（変更する場合のみ入力）</span>
+                </label>
+                <input
+                  type="password"
+                  value={editForm.loginChannelSecret}
+                  onChange={(e) => setEditForm({ ...editForm, loginChannelSecret: e.target.value })}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="空欄のまま = 変更しない"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  LIFF ID
+                  <span className="ml-1 text-gray-400 font-normal">（空欄でクリア）</span>
+                </label>
+                <input
+                  type="text"
+                  value={editForm.liffId}
+                  onChange={(e) => setEditForm({ ...editForm, liffId: e.target.value })}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="例: 2009679327-AbCdEfGh"
                 />
               </div>
               <div className="flex justify-end gap-3 pt-2">

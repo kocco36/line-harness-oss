@@ -142,6 +142,9 @@ lineAccounts.put('/api/line-accounts/:id', requireRole('owner'), async (c) => {
       channelAccessToken?: string;
       channelSecret?: string;
       isActive?: boolean;
+      loginChannelId?: string | null;
+      loginChannelSecret?: string | null;
+      liffId?: string | null;
     }>();
 
     const updated = await updateLineAccount(c.env.DB, id, {
@@ -149,6 +152,9 @@ lineAccounts.put('/api/line-accounts/:id', requireRole('owner'), async (c) => {
       channel_access_token: body.channelAccessToken,
       channel_secret: body.channelSecret,
       is_active: body.isActive !== undefined ? (body.isActive ? 1 : 0) : undefined,
+      login_channel_id: body.loginChannelId,
+      login_channel_secret: body.loginChannelSecret,
+      liff_id: body.liffId,
     });
 
     if (!updated) {

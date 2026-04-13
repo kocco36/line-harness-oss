@@ -71,7 +71,7 @@ export async function getLineAccountByChannelId(
 }
 
 export type UpdateLineAccountInput = Partial<
-  Pick<LineAccount, 'name' | 'channel_access_token' | 'channel_secret' | 'is_active' | 'token_expires_at'>
+  Pick<LineAccount, 'name' | 'channel_access_token' | 'channel_secret' | 'is_active' | 'token_expires_at' | 'login_channel_id' | 'login_channel_secret' | 'liff_id'>
 >;
 
 export async function updateLineAccount(
@@ -101,6 +101,18 @@ export async function updateLineAccount(
   if (updates.token_expires_at !== undefined) {
     fields.push('token_expires_at = ?');
     values.push(updates.token_expires_at);
+  }
+  if (updates.login_channel_id !== undefined) {
+    fields.push('login_channel_id = ?');
+    values.push(updates.login_channel_id);
+  }
+  if (updates.login_channel_secret !== undefined) {
+    fields.push('login_channel_secret = ?');
+    values.push(updates.login_channel_secret);
+  }
+  if (updates.liff_id !== undefined) {
+    fields.push('liff_id = ?');
+    values.push(updates.liff_id);
   }
 
   if (fields.length === 0) return getLineAccountById(db, id);
