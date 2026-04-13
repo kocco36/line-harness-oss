@@ -6,6 +6,10 @@ import {
   linkFriendToUser,
   upsertFriend,
   getEntryRouteByRefCode,
+  getEntryRoutes,
+  createEntryRoute,
+  updateEntryRoute,
+  deleteEntryRoute,
   recordRefTracking,
   addTagToFriend,
   getLineAccountByChannelId,
@@ -1470,6 +1474,99 @@ liffRoutes.post('/api/liff/send-form-link', async (c) => {
     return c.json({ success: true });
   } catch (err) {
     console.error('POST /api/liff/send-form-link error:', err);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
+  }
+});
+
+// ─── Entry Routes CRUD ──────────────────────────────────────
+
+function serializeEntryRoute(r: { id: string; ref_code: string; name: string; tag_id: string | null; scenario_id: string | null; redirect_url: string | null; is_active: number; created_at: string; updated_at: string }) {
+  return {
+    id: r.id,
+    refCode: r.ref_code,
+    name: r.name,
+    tagId: r.tag_id,
+    scenarioId: r.scenario_id,
+    redirectUrl: r.redirect_url,
+    isActive: Boolean(r.is_active),
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  };
+}
+
+// GET /api/entry-routes — list all
+liffRoutes.get('/api/entry-routes', async (c) => {
+  try {
+    const routes = await getEntryRoutes(c.env.DB);
+    return c.json({ success: true, data: routes.map(serializeEntryRoute) });
+  } catch (err) {
+    console.error('GET /api/entry-routes error:', err);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
+  }
+});
+
+// POST /api/entry-routes — create
+liffRoutes.post('/api/entry-routes', async (c) => {
+  try {
+    const body = await c.req.json<{
+      name: string;
+      refCode: string;
+      tagId?: string | null;
+      scenarioId?: string | null;
+      redirectUrl?: string | null;
+    }>();
+    if (!body.name || !body.refCode) {
+      return c.json({ success: false, error: 'name and refCode are required' }, 400);
+    }
+    const route = await createEntryRoute(c.env.DB, {
+      name: body.name,
+      refCode: body.refCode,
+      tagId: body.tagId ?? null,
+      scenarioId: body.scenarioId ?? null,
+      redirectUrl: body.redirectUrl ?? null,
+    });
+    return c.json({ success: true, data: serializeEntryRoute(route) }, 201);
+  } catch (err) {
+    console.error('POST /api/entry-routes error:', err);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
+  }
+});
+
+// PUT /api/entry-routes/:id — update
+liffRoutes.put('/api/entry-routes/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const body = await c.req.json<{
+      name?: string;
+      tagId?: string | null;
+      scenarioId?: string | null;
+      redirectUrl?: string | null;
+      isActive?: boolean;
+    }>();
+    const updated = await updateEntryRoute(c.env.DB, id, {
+      name: body.name,
+      tagId: body.tagId,
+      scenarioId: body.scenarioId,
+      redirectUrl: body.redirectUrl,
+      isActive: body.isActive,
+    });
+    if (!updated) {
+      return c.json({ success: false, error: 'Entry route not found' }, 404);
+    }
+    return c.json({ success: true, data: serializeEntryRoute(updated) });
+  } catch (err) {
+    console.error('PUT /api/entry-routes/:id error:', err);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
+  }
+});
+
+// DELETE /api/entry-routes/:id — delete
+liffRoutes.delete('/api/entry-routes/:id', async (c) => {
+  try {
+    await deleteEntryRoute(c.env.DB, c.req.param('id'));
+    return c.json({ success: true, data: null });
+  } catch (err) {
+    console.error('DELETE /api/entry-routes/:id error:', err);
     return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
