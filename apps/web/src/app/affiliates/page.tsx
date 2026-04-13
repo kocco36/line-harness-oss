@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Header from '@/components/layout/header'
 
-import { fetchApi } from '@/lib/api'
+import { fetchApi, api } from '@/lib/api'
 import { useAccount } from '@/contexts/account-context'
 
 const WORKER_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787'
@@ -43,6 +43,13 @@ export default function AttributionPage() {
   const [detail, setDetail] = useState<RefDetailData | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
+
+  // 新規追加モーダル
+  const [showModal, setShowModal] = useState(false)
+  const [formName, setFormName] = useState('')
+  const [formCode, setFormCode] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
 
   const loadSummary = useCallback(async () => {
     setLoading(true)
@@ -89,6 +96,23 @@ export default function AttributionPage() {
     setTimeout(() => setCopiedCode(null), 2000)
   }
 
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!formName.trim() || !formCode.trim()) return
+    setSubmitting(true)
+    setFormError(null)
+    try {
+      await api.affiliates.create({ name: formName.trim(), code: formCode.trim() })
+      setShowModal(false)
+      setFormName('')
+      setFormCode('')
+      loadSummary()
+    } catch {
+      setFormError('作成に失敗しました。コードが重複していないか確認してください。')
+    }
+    setSubmitting(false)
+  }
+
   const formatDate = (iso: string | null) => {
     if (!iso) return '—'
     return new Date(iso).toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' })
@@ -99,6 +123,14 @@ export default function AttributionPage() {
       <Header
         title="流入経路分析"
         description="ref コード別の友だち獲得・クリック実績"
+        action={
+          <button
+            onClick={() => setShowModal(true)}
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <span className="text-base leading-none">+</span> 新規追加
+          </button>
+        }
       />
 
       {/* Summary cards */}
@@ -203,6 +235,64 @@ export default function AttributionPage() {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+      {/* 新規追加モーダル */}
+      {showModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={() => setShowModal(false)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">流入経路を追加</h2>
+            <form onSubmit={handleCreate} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">経路名</label>
+                <input
+                  type="text"
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  placeholder="例: Instagram広告"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">ref コード</label>
+                <input
+                  type="text"
+                  value={formCode}
+                  onChange={(e) => setFormCode(e.target.value)}
+                  placeholder="例: instagram_ad_2026"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+                <p className="mt-1 text-xs text-gray-400">
+                  URL に使用されます。英数字・アンダースコア推奨
+                </p>
+              </div>
+              {formError && <p className="text-sm text-red-600">{formError}</p>}
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  キャンセル
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                >
+                  {submitting ? '作成中...' : '作成'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
