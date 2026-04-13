@@ -49,6 +49,11 @@ export default function AccountsPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [form, setForm] = useState({ channelId: '', name: '', channelAccessToken: '', channelSecret: '' })
 
+  // 編集モーダル
+  const [editAccount, setEditAccount] = useState<LineAccountListItem | null>(null)
+  const [editForm, setEditForm] = useState({ name: '', channelAccessToken: '', channelSecret: '' })
+  const [editSubmitting, setEditSubmitting] = useState(false)
+
   const load = async () => {
     setLoading(true)
     setError('')
@@ -87,6 +92,27 @@ export default function AccountsPage() {
   const handleToggle = async (id: string, currentActive: boolean) => {
     await api.lineAccounts.update(id, { isActive: !currentActive })
     load()
+  }
+
+  const openEdit = (account: LineAccountListItem) => {
+    setEditAccount(account)
+    setEditForm({ name: account.name, channelAccessToken: '', channelSecret: '' })
+  }
+
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editAccount) return
+    setEditSubmitting(true)
+    try {
+      const data: { name?: string; channelAccessToken?: string; channelSecret?: string } = {}
+      if (editForm.name.trim()) data.name = editForm.name.trim()
+      if (editForm.channelAccessToken.trim()) data.channelAccessToken = editForm.channelAccessToken.trim()
+      if (editForm.channelSecret.trim()) data.channelSecret = editForm.channelSecret.trim()
+      await api.lineAccounts.update(editAccount.id, data)
+      setEditAccount(null)
+      load()
+    } catch {}
+    setEditSubmitting(false)
   }
 
   return (
@@ -226,17 +252,95 @@ export default function AccountsPage() {
                 <p className="text-xs text-gray-400">
                   登録: {new Date(account.createdAt).toLocaleDateString('ja-JP')}
                 </p>
-                <button
-                  onClick={() => handleDelete(account.id)}
-                  className="text-red-500 hover:text-red-700 text-xs"
-                >
-                  削除
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => openEdit(account)}
+                    className="text-blue-500 hover:text-blue-700 text-xs"
+                  >
+                    編集
+                  </button>
+                  <button
+                    onClick={() => handleDelete(account.id)}
+                    className="text-red-500 hover:text-red-700 text-xs"
+                  >
+                    削除
+                  </button>
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
+      {/* 編集モーダル */}
+      {editAccount && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={() => setEditAccount(null)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-semibold text-gray-900 mb-1">アカウントを編集</h2>
+            <p className="text-xs text-gray-400 mb-4">Channel ID: {editAccount.channelId}</p>
+            <form onSubmit={handleEdit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">アカウント名</label>
+                <input
+                  type="text"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Channel Access Token
+                  <span className="ml-1 text-gray-400 font-normal">（変更する場合のみ入力）</span>
+                </label>
+                <input
+                  type="password"
+                  value={editForm.channelAccessToken}
+                  onChange={(e) => setEditForm({ ...editForm, channelAccessToken: e.target.value })}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="空欄のまま = 変更しない"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Channel Secret
+                  <span className="ml-1 text-gray-400 font-normal">（変更する場合のみ入力）</span>
+                </label>
+                <input
+                  type="password"
+                  value={editForm.channelSecret}
+                  onChange={(e) => setEditForm({ ...editForm, channelSecret: e.target.value })}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="空欄のまま = 変更しない"
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditAccount(null)}
+                  className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  キャンセル
+                </button>
+                <button
+                  type="submit"
+                  disabled={editSubmitting}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                >
+                  {editSubmitting ? '保存中...' : '保存'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <CcPromptButton prompts={ccPrompts} />
     </div>
   )
