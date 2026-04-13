@@ -126,7 +126,8 @@ export default function AttributionPage() {
         action={
           <button
             onClick={() => setShowModal(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
+            style={{ backgroundColor: '#06C755' }}
           >
             <span className="text-base leading-none">+</span> 新規追加
           </button>

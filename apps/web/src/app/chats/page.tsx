@@ -214,13 +214,24 @@ function DirectMessagePanel({ friendId, friend, onBack, onSent }: {
       </div>
       <div className="px-4 py-3 border-t border-gray-200">
         <div className="flex gap-2">
-          <input
-            type="text"
+          <textarea
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={(e) => { if (e.nativeEvent.isComposing) return; if (e.key === 'Enter' && !e.shiftKey) handleSend() }}
-            placeholder="メッセージを入力..."
-            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            onChange={(e) => {
+              setMessage(e.target.value)
+              e.target.style.height = 'auto'
+              e.target.style.height = Math.min(e.target.scrollHeight, 96) + 'px'
+            }}
+            onKeyDown={(e) => {
+              if (e.nativeEvent.isComposing) return
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                handleSend()
+              }
+            }}
+            placeholder="メッセージを入力... (Shift+Enter で改行)"
+            rows={1}
+            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none overflow-y-auto"
+            style={{ maxHeight: '96px' }}
           />
           <button
             onClick={handleSend}
@@ -395,7 +406,7 @@ export default function ChatsPage() {
     }
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.nativeEvent.isComposing) return
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -674,12 +685,13 @@ export default function ChatsPage() {
                   </select>
                 </div>
                 <div className="flex items-center gap-2">
-                  <input
-                    type="text"
+                  <textarea
                     value={messageContent}
                     onChange={(e) => {
                       const value = e.target.value
                       setMessageContent(value)
+                      e.target.style.height = 'auto'
+                      e.target.style.height = Math.min(e.target.scrollHeight, 96) + 'px'
                       if (selectedChatId && isMessageInputFocused && value.trim()) {
                         void triggerLoadingAnimation(selectedChatId)
                       }
@@ -692,8 +704,10 @@ export default function ChatsPage() {
                     }}
                     onBlur={() => setIsMessageInputFocused(false)}
                     onKeyDown={handleKeyDown}
-                    placeholder="メッセージを入力..."
-                    className="flex-1 text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                    placeholder="メッセージを入力... (Shift+Enter で改行)"
+                    rows={1}
+                    className="flex-1 text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-green-500 resize-none overflow-y-auto"
+                    style={{ maxHeight: '96px' }}
                   />
                   <button
                     onClick={handleSendMessage}
