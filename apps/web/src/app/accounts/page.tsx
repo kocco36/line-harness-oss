@@ -399,7 +399,8 @@ export default function AccountsPage() {
                 <button
                   type="submit"
                   disabled={editSubmitting}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity"
+                  style={{ backgroundColor: '#06C755' }}
                 >
                   {editSubmitting ? '保存中...' : '保存'}
                 </button>
